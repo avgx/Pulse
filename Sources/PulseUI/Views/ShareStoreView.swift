@@ -9,7 +9,7 @@ import CoreData
 import Pulse
 import Combine
 
-@available(iOS 16, macOS 13, watchOS 9, visionOS 1, *)
+@available(iOS 15, macOS 13, watchOS 9, visionOS 1, *)
 package struct ShareStoreView: View {
     /// Preselected sessions.
     var sessions: Set<UUID> = []
@@ -83,7 +83,12 @@ package struct ShareStoreView: View {
     @ViewBuilder
     private var sectionSharingOptions: some View {
         Section {
-            ConsoleSessionsPickerView(selection: $viewModel.sessions)
+            if #available(iOS 16, *) {
+                ConsoleSessionsPickerView(selection: $viewModel.sessions)
+            } else {
+                // Fallback on earlier versions
+                InfoRow(title: "Sessions", details: "Current")
+            }
 #if os(iOS) || os(visionOS)
             NavigationLink(destination: destinationLogLevels) {
                 InfoRow(title: "Log Levels", details: viewModel.selectedLevelsTitle)
@@ -176,3 +181,31 @@ struct ShareStoreView_Previews: PreviewProvider {
 #endif
 
 #endif
+
+@available(iOS 15, macOS 13, watchOS 9, *)
+public struct StandaloneShareStoreView: View {
+    @State var store: LoggerStore
+    var onDismiss: () -> Void
+
+    public init(store: LoggerStore = .shared, onDismiss: @escaping () -> Void = { }) {
+        self.store = store
+        self.onDismiss = onDismiss
+    }
+    public var body: some View {
+#if os(iOS)
+        NavigationView {
+            if #available(iOS 16, *) {
+                ShareStoreView(onDismiss: { onDismiss() })
+            } else {
+                
+            }
+        }
+        .backport.presentationDetents([.medium, .large])
+        .injecting(.init(store: self.store))
+#else
+        ShareStoreView(onDismiss: { onDismiss() })
+            .injecting(.init(store: self.store))
+            .frame(width: 240).fixedSize()
+#endif
+    }
+}

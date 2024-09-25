@@ -101,8 +101,8 @@ import Combine
         case .text, .html:
             let output: ShareOutput = output == .text ? .plainText : .html
             return try await prepareForSharing(store: store, output: output, options: options)
-        case .har:
-            return try await prepareForSharing(store: store, output: .har, options: options)
+//        case .har:
+//            return try await prepareForSharing(store: store, output: .har, options: options)
         }
     }
 

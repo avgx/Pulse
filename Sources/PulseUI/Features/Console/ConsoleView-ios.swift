@@ -61,7 +61,13 @@ public struct ConsoleView: View {
         Button(action: { environment.router.isShowingFilters = true }) {
             Image(systemName: "line.horizontal.3.decrease.circle")
         }
-        ConsoleContextMenu()
+        //        ConsoleContextMenu()
+        if !environment.store.options.contains(.readonly) {
+            Button(role: .destructive, action: environment.removeAllLogs) {
+                Label("Remove Logs", systemImage: "trash")
+            }
+            .tint(.red)
+        }
     }
 }
 
