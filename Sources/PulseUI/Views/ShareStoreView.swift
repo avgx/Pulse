@@ -194,11 +194,7 @@ public struct StandaloneShareStoreView: View {
     public var body: some View {
 #if os(iOS)
         NavigationView {
-            if #available(iOS 16, *) {
-                ShareStoreView(onDismiss: { onDismiss() })
-            } else {
-                
-            }
+            ShareStoreView(onDismiss: { onDismiss() })
         }
         .backport.presentationDetents([.medium, .large])
         .injecting(.init(store: self.store))
