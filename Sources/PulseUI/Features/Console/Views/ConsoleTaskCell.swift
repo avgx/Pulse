@@ -31,10 +31,10 @@ package struct ConsoleTaskCell: View {
         VStack(alignment: .leading, spacing: 4) {
             header
             makeContent(settings: settings.listDisplayOptions.content)
-                .higlighted(highlightedArea == .content)
+                .highlighted(highlightedArea == .content)
 #if os(iOS) || os(watchOS)
             makeFooter(settings: settings.listDisplayOptions.footer)
-                .higlighted(highlightedArea == .footer)
+                .highlighted(highlightedArea == .footer)
 #endif
         }
     }
@@ -54,12 +54,12 @@ package struct ConsoleTaskCell: View {
             if task.isMocked {
                 MockBadgeView()
             }
-            info.higlighted(highlightedArea == .header)
+            info.highlighted(highlightedArea == .header)
 
             Spacer()
-#if canImport(RiftSupport)
-            PinView(task: task)
-#endif
+            if task.isPinned {
+                BookmarkIconView()
+            }
             ConsoleTimestampView(date: task.createdAt)
                 .padding(.trailing, 3)
         }
@@ -178,7 +178,7 @@ import RiftSupport
 
 private extension View {
     @ViewBuilder
-    func higlighted(_ isHighlighted: Bool) -> some View {
+    func highlighted(_ isHighlighted: Bool) -> some View {
         if isHighlighted {
             self.highlighted()
         } else {
@@ -188,7 +188,7 @@ private extension View {
 }
 #else
 private extension View {
-    func higlighted(_ isHighlighted: Bool) -> some View {
+    func highlighted(_ isHighlighted: Bool) -> some View {
         self
     }
 }

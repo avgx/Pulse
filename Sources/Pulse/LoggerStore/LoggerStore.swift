@@ -766,9 +766,10 @@ extension LoggerStore {
     /// - parameter predicate: By default, `nil`.
     public func messages(
         sortDescriptors: [SortDescriptor<LoggerMessageEntity>] = [SortDescriptor(\.createdAt, order: .forward)],
-        predicate: NSPredicate? = nil
+        predicate: NSPredicate? = nil,
+        context: NSManagedObjectContext? = nil
     ) throws -> [LoggerMessageEntity] {
-        try viewContext.fetch(LoggerMessageEntity.self) {
+        try (context ?? viewContext).fetch(LoggerMessageEntity.self) {
             $0.sortDescriptors = sortDescriptors.map(NSSortDescriptor.init)
             $0.predicate = predicate
         }
@@ -781,9 +782,10 @@ extension LoggerStore {
     /// - parameter predicate: By default, `nil`.
     public func tasks(
         sortDescriptors: [SortDescriptor<NetworkTaskEntity>] = [SortDescriptor(\.createdAt, order: .forward)],
-        predicate: NSPredicate? = nil
+        predicate: NSPredicate? = nil,
+        context: NSManagedObjectContext? = nil
     ) throws -> [NetworkTaskEntity] {
-        try viewContext.fetch(NetworkTaskEntity.self) {
+        try (context ?? viewContext).fetch(NetworkTaskEntity.self) {
             $0.sortDescriptors = sortDescriptors.map(NSSortDescriptor.init)
             $0.predicate = predicate
         }
@@ -808,6 +810,12 @@ extension LoggerStore {
         }
     }
 
+    package func clearSessions(withIDs sessionIDs: Set<UUID>) {
+        perform { _ in
+            try? self._removeMessagesForSessions(withIDs: sessionIDs, isInverted: false)
+        }
+    }
+
     private func _removeSessions(withIDs sessionIDs: Set<UUID>, isInverted: Bool = false) throws {
         try deleteEntities(for: {
             let request = LoggerSessionEntity.fetchRequest()
@@ -816,6 +824,10 @@ extension LoggerStore {
             return request
         }())
 
+        try _removeMessagesForSessions(withIDs: sessionIDs, isInverted: isInverted)
+    }
+
+    private func _removeMessagesForSessions(withIDs sessionIDs: Set<UUID>, isInverted: Bool) throws {
         var predicate = NSPredicate(format: "session IN %@", sessionIDs)
         predicate = isInverted ? NSCompoundPredicate(notPredicateWithSubpredicate: predicate) : predicate
         try removeMessages(with: predicate)
@@ -825,7 +837,9 @@ extension LoggerStore {
 
     /// Removes all of the previously recorded messages.
     public func removeAll() {
-        perform { _ in self._removeAll() }
+        perform { _ in
+            self._removeAll()
+        }
     }
 
     private func _removeAll() {

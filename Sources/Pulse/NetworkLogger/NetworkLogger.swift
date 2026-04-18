@@ -2,6 +2,7 @@
 //
 // Copyright (c) 2020-2024 Alexander Grebenyuk (github.com/kean).
 
+import AVFoundation
 import Foundation
 
 /// A wrapper on top of ``LoggerStore`` that simplifies logging of network requests.
@@ -161,11 +162,15 @@ public final class NetworkLogger: @unchecked Sendable {
     public func logTaskCreated(_ task: URLSessionTask) {
         lock.lock()
         guard tasks[TaskKey(task: task)] == nil else {
+            lock.unlock()
             return // Already registered
         }
         let context = context(for: task)
         lock.unlock()
 
+#if !os(tvOS) && !os(watchOS)
+        guard !task.isKind(of: AVAssetDownloadTask.self) else { return }
+#endif
         guard let originalRequest = task.originalRequest else { return }
         send(.networkTaskCreated(LoggerStore.Event.NetworkTaskCreated(
             taskId: context.taskId,

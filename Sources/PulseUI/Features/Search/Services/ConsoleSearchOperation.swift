@@ -135,11 +135,21 @@ final class ConsoleSearchOperation {
                 if let string = task.requestBody.flatMap(service.getBodyString) {
                     occurrences += ConsoleSearchOperation.search(string, term, scope)
                 }
-            case .originalRequestHeaders, .currentRequestHeaders, .responseHeaders:
-                break // Reserved
+            case .originalRequestHeaders:
+                if let headers = task.originalRequest?.httpHeaders {
+                    occurrences += ConsoleSearchOperation.search(headers, term, scope)
+                }
+            case .currentRequestHeaders:
+                if let headers = task.currentRequest?.httpHeaders {
+                    occurrences += ConsoleSearchOperation.search(headers, term, scope)
+                }
             case .responseBody:
                 if let string = task.responseBody.flatMap(service.getBodyString) {
                     occurrences += ConsoleSearchOperation.search(string, term, scope)
+                }
+            case .responseHeaders:
+                if let headers = task.response?.httpHeaders {
+                    occurrences += ConsoleSearchOperation.search(headers, term, scope)
                 }
             case .message, .metadata:
                 break // Applies only to LoggerMessageEntity
@@ -160,7 +170,7 @@ final class ConsoleSearchOperation {
         var lineCount = 0
         content.enumerateLines { line, stop in
             lineCount += 1
-            for range in line.ranges(of: term.text, options: term.options) {
+            for range in line.ranges(of: term.text, options: term.options, limit: ConsoleSearchMatch.limit) {
                 let match = ConsoleSearchMatch(line: line, lineNumber: lineCount, range: range, term: term)
                 matches.append(match)
             }
@@ -195,7 +205,7 @@ package struct ConsoleSearchMatch {
     package let range: Range<String.Index>
     package let term: ConsoleSearchTerm
 
-    package static let limit = 1000
+    package static let limit = 6
 
     package init(line: String, lineNumber: Int, range: Range<String.Index>, term: ConsoleSearchTerm) {
         self.line = line

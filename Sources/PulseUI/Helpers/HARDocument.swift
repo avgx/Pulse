@@ -18,7 +18,7 @@ struct HARDocument: Encodable {
     init(store: LoggerStore) throws {
         var entries: [Entry] = []
         var pages: [Page] = []
-        try Dictionary(grouping: store.tasks(), by: \.url).values.forEach { networkTasks in
+        try Dictionary(grouping: store.tasks(context: store.backgroundContext), by: \.url).values.forEach { networkTasks in
             let pageId = "page_\(pages.count)"
             pages.append(
                 .init(
@@ -29,7 +29,7 @@ struct HARDocument: Encodable {
             )
             entries.append(contentsOf: networkTasks.map { .init(entity: $0, pageId: pageId) })
         }
-        try store.messages().forEach { message in
+        try store.messages(context: store.backgroundContext).forEach { message in
             if let task = message.task {
                 entries.append(.init(entity: task, pageId: "page_\(pages.count)"))
             }
@@ -85,15 +85,7 @@ extension HARDocument {
             cache = .init()
             connection = "\(entity.orderedTransactions.first?.remotePort ?? .zero)"
             pageref = pageId
-            request = .init(
-                cookies: [],
-                headers: entity.originalRequest?.headers.compactMap { ["name": $0.key, "value": $0.value] } ?? [],
-                httpVersion: "HTTP/2",
-                method: entity.httpMethod,
-                queryString: [],
-                url: entity.url
-            )
-
+            request = .init(entity)
             response = .init(entity)
 
             serverIPAddress = entity.orderedTransactions.first?.remoteAddress ?? ""
@@ -170,6 +162,21 @@ extension HARDocument.Entry {
         let method: String?
         let queryString: [[String: String]]
         let url: String?
+        let postData: Content?
+       
+        init(_ entity: NetworkTaskEntity?) {
+            
+            bodySize = Int(entity?.requestBody?.size ?? -1);
+            cookies = []
+            headers = entity?.originalRequest?.headers.compactMap { ["name": $0.key, "value": $0.value] } ?? [];
+            httpVersion = "HTTP/2";
+            method = entity?.httpMethod;
+            queryString = [];
+            url = entity?.url;
+            postData = .init(entity?.requestBody);
+            
+        }
+        
     }
 
     struct Response: Encodable {
